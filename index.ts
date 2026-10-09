@@ -1,6 +1,26 @@
 import { Annotation, StateGraph, START, END } from '@langchain/langgraph'
 import { BaseMessage, AIMessage, HumanMessage } from '@langchain/core/messages'
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
+import "dotenv/config"
 import fs from 'fs'
+
+const apiKey = process.env.GOOGLE_GENAI_API_KEY
+const model = process.env.MODEL_AI
+
+if (!apiKey) {
+    throw new Error("GOOGLE_GENAI_API_KEY is not set in the environment variables.")
+}
+
+if (!model) {
+    throw new Error("MODEL_AI is not set in the environment variables.")
+}
+
+const ai = new ChatGoogleGenerativeAI({
+    model,
+    apiKey
+})
+
+console.log(await ai.invoke("hi"))
 
 const State = Annotation.Root({
     input: Annotation<HumanMessage>,
@@ -8,17 +28,19 @@ const State = Annotation.Root({
        reducer: (currExecutedNodes, newExecutedNode) => currExecutedNodes + 1,
        default: () => 0, 
     }),
+    nextNode: Annotation<string>,
     output: Annotation<BaseMessage[]>({
         reducer: (currOutput, newOutput) => currOutput.concat(newOutput),
         default: () => [],
     }),
 })
 
-const supervisor = (state: typeof State.State) => {
+const supervisor = async (state: typeof State.State) => {
     console.log("Supervisor escolhendo o proximo")
-    return {
-        output: [new AIMessage("I'm doing well, thank you!")],
-    }
+
+    const nextNode = await ai.invoke("Escolha um desses proximos estados: financial_specialist, scheduling_specialist, comms_specialist, END. Retorne apenas o nome do proximo estado escolhido, sem aspas, sem explicacao, sem nada mais. Apenas o nome do proximo estado.")
+    
+    return { nextNode: nextNode.content }
 }
 
 const financialSpecialist = (state: typeof State.State) => {
@@ -52,15 +74,7 @@ const graph = new StateGraph(State)
     .addNode("comms_specialist", commsSpecialist)
     .addEdge(START, "supervisor")
     .addConditionalEdges("supervisor", (state: typeof State.State) => {
-       if(state.executedNodes == 0) {
-           return "financial_specialist"
-       } else if(state.executedNodes == 1) {
-           return "scheduling_specialist"
-       } else if(state.executedNodes == 2) {
-           return "comms_specialist"
-       } else {
-           return "END"
-       }
+       return state.nextNode
     })
     .addEdge("financial_specialist", "supervisor")
     .addEdge("scheduling_specialist", "supervisor")
