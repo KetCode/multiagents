@@ -9,18 +9,38 @@ import { z } from 'zod'
 const payBill = new DynamicStructuredTool({
     name: "pay_bill",
     description: "Pagar a conta do usuário",
-    schema: z.object({
-        amount: z.number().describe("O valor da conta a ser paga"),
-    }),
-    func: async ( { amount }) => {
-        console.log(`pagando conta de R$ ${amount}...`)
+    schema: z.object({}),
+    func: async () => {
+        console.log("pagando conta...")
         return "Conta paga com sucesso!"
+    }
+})
+
+const createBill = new DynamicStructuredTool({
+    name: "create_bill",
+    description: "Cria uma novo boleto para ser pago pelo usuário",
+    schema: z.object({
+        price: z.number().describe("O valor do boleto a ser criado"),
+    }),
+    func: async () => {
+        console.log("criando boleto...")
+        return "Boleto criado com sucesso!"
+    }
+})
+
+const getBill = new DynamicStructuredTool({
+    name: "get_bill",
+    description: "Pegar o valor da conta do usuário",
+    schema: z.object({}),
+    func: async () => {
+        console.log("obtendo valor da conta...")
+        return "Sua conta tem um valor de 500 reais."
     }
 })
 
 const financialSpecialistAgent = createAgent({
     model: ai,
-    tools: [payBill],
+    tools: [payBill, createBill, getBill],
     systemPrompt: new SystemMessage("Você é um especialista financeiro. Responda a pergunta do cliente com base na conversa a seguir. Seja conciso e direto ao ponto."),
 })
 
@@ -32,7 +52,7 @@ export const financialSpecialist = async (state: typeof State.State) => {
 
     return {
         messages: [new HumanMessage({
-            content: financialSpecialistResponse
+            content: "Financial Specialist: " + financialSpecialistResponse
         })],
     }
 }
