@@ -1,4 +1,4 @@
-import { StateGraph, START } from '@langchain/langgraph'
+import { StateGraph, START, END } from '@langchain/langgraph'
 import { HumanMessage } from '@langchain/core/messages'
 import fs from 'fs'
 
@@ -19,10 +19,10 @@ const graph = new StateGraph(State)
     })
     .addEdge("financial_specialist", "supervisor")
     .addEdge("scheduling_specialist", "supervisor")
-    .addEdge("comms_specialist", "supervisor")
+    .addEdge("comms_specialist", END)
     .compile();
 
-const result = await graph.invoke({ messages: [new HumanMessage("Olá, quero marcar uma consulta")] })
+const result = await graph.invoke({ messages: [new HumanMessage("Olá, quero remarcar uma consulta")] })
 console.log(result)
 
 const drawableGraph = await graph.getGraphAsync()
